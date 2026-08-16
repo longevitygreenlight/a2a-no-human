@@ -25,6 +25,7 @@ async function judge(want, offer) {
 
 app.post('/buy', async (q, r) => {
   try {
+    if (process.env.BUY_PASS && (q.body.pass || '') !== process.env.BUY_PASS) return r.status(401).json({ error: 'password incorrect - your agent was not sent' });
     const want = (q.body.want || '').toString().slice(0, 200);
     if (!want) return r.json({ error: 'tell me what to buy' });
     const capUsd = Math.min(parseFloat(q.body.cap || '1') || 0, MAX_SPEND);
