@@ -1,0 +1,37 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent Storefront</title>
+<style>
+body{margin:0;background:#f1ece4;font:16px/1.55 system-ui,sans-serif;color:#111827}
+.card{max-width:520px;margin:22px auto;background:#fffdfa;border-radius:20px;padding:30px}
+.eyebrow{color:#7c3aed;font-weight:800;letter-spacing:.15em;font-size:13px}
+h1{font-size:40px;margin:8px 0 16px;letter-spacing:-.02em}
+p.sub{color:#4b5563;margin:0 0 24px}
+label{display:block;font-weight:800;margin:20px 0 8px}
+input{width:100%;box-sizing:border-box;padding:15px 16px;border:1px solid #d1d5db;border-radius:14px;font-size:16px}
+button{width:100%;margin-top:24px;padding:17px;border:0;border-radius:999px;background:#1f2937;color:#fff;font-size:17px;font-weight:800}
+.rainbow{margin-top:18px;font-size:23px;font-weight:800;text-align:center}
+#out{margin-top:22px;font-size:15px}
+</style>
+<div class="card">
+<div class="eyebrow">BUYER AGENT</div>
+<h1>Agent Storefront</h1>
+<p class="sub">Super excited to shop the open registry for you.<br>I will gladly &mdash; find it, judge it, and buy it. ps: Just for you....</p>
+<label for="want">What would you like me to buy?</label>
+<input id="want" placeholder="fix the habits ruining my deep sleep">
+<label for="cap">What is the maximum you want to spend in USD?</label>
+<input id="cap" placeholder="1">
+<button id="go">Send my agent shopping</button>
+<div class="rainbow"><span style="color:#0e7490">Something</span> <span style="color:#c084fc">good</span> <span style="color:#f472b6">is</span> <span style="color:#fb7185">coming</span> <span style="color:#ca8a04">my</span> <span style="color:#166534">way</span></div>
+<div id="out"></div>
+</div>
+<script>
+const out=document.getElementById('out');
+document.getElementById('go').onclick=async()=>{
+out.textContent='Something good is coming your way\u2026';
+const r=await fetch('/buy',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({want:want.value,cap:cap.value||'1'})});
+const d=await r.json();
+out.innerHTML=d.play_url?'<b>Yay! Found it. Bought it. And it\'s yours.</b><br><br><a href="'+d.play_url+'">Delivery of '+want.value+'</a>':'<b>Nothing found &mdash; And hey I wasn\'t going to spend your money badly. That\'s a win too.</b>';
+};
+</script>

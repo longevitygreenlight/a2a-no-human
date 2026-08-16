@@ -1,0 +1,4 @@
+*.bak*
+buyer.txt
+.env
+node_modules/
