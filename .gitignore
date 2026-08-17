@@ -2,3 +2,4 @@
 buyer.txt
 .env
 node_modules/
+buyer*.txt

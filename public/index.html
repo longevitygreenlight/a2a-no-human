@@ -29,6 +29,12 @@ button{width:100%;margin-top:24px;padding:17px;border:0;border-radius:999px;back
 #pass.err::placeholder{color:#dc2626}
 #eye.err svg{stroke:#dc2626}
 #out.err{color:#dc2626;font-weight:800}
+
+/* optional email block - hidden until the three required fields are filled */
+#emailblock{display:none;margin-top:4px}
+#emailblock.show{display:block}
+#emaillabel{color:#4b5563}
+#emaillabel .opt{color:#7c3aed;font-weight:800}
 </style>
 <div class="card">
 <div class="eyebrow">BUYER AGENT</div>
@@ -37,13 +43,17 @@ button{width:100%;margin-top:24px;padding:17px;border:0;border-radius:999px;back
 <label for="want">What would you like me to buy?</label>
 <input id="want" placeholder="fix the habits ruining my deep sleep">
 <label for="cap">What is the maximum you want to spend in USD?</label>
-<input id="cap" placeholder="1">
+<input id="cap" type="text" inputmode="decimal" placeholder="1" autocomplete="off">
 <label for="pass" id="passlabel">Password</label>
 <div class="pwwrap">
 <input id="pass" type="text" placeholder="" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
 <button id="eye" type="button" aria-label="Hide password">
 <svg viewBox="0 0 24 24"><path d="M1.8 12S5.4 5.4 12 5.4 22.2 12 22.2 12 18.6 18.6 12 18.6 1.8 12 1.8 12Z"/><circle cx="12" cy="12" r="3.2"/><line class="slash" x1="4" y1="20" x2="20" y2="4"/></svg>
 </button>
+</div>
+<div id="emailblock">
+<label for="email" id="emaillabel"><span class="opt">Optional</span> &mdash; receive email for successful purchase....</label>
+<input id="email" type="email" placeholder="you@example.com" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false">
 </div>
 <button id="go" disabled>Send my agent shopping</button>
 <div class="rainbow"><span style="color:#0e7490">Something</span> <span style="color:#c084fc">good</span> <span style="color:#f472b6">is</span> <span style="color:#fb7185">coming</span> <span style="color:#ca8a04">my</span> <span style="color:#166534">way</span></div>
@@ -72,11 +82,23 @@ function clearErr(){
 const go=document.getElementById('go');
 const wantInput=document.getElementById('want');
 const capInput=document.getElementById('cap');
+const emailBlock=document.getElementById('emailblock');
+const emailInput=document.getElementById('email');
 function syncGo(){
-  go.disabled = wantInput.value.trim()==='' || capInput.value.trim()==='' || passInput.value.trim()==='';
+  const ready = wantInput.value.trim()!=='' && capInput.value.trim()!=='' && passInput.value.trim()!=='';
+  go.disabled = !ready;
+  emailBlock.classList.toggle('show', ready);
+  if(!ready) emailInput.value='';
 }
 wantInput.oninput = syncGo;
-capInput.oninput = syncGo;
+capInput.oninput = function(){
+  // digits and one decimal point only
+  let v = capInput.value.replace(/[^0-9.]/g,'');
+  const i = v.indexOf('.');
+  if(i !== -1) v = v.slice(0,i+1) + v.slice(i+1).replace(/\./g,'');
+  capInput.value = v;
+  syncGo();
+};
 passInput.oninput = function(){ clearErr(); syncGo(); };
 syncGo();
 
@@ -85,7 +107,7 @@ clearErr();
 out.textContent='Something good is coming your way\u2026';
 let d;
 try{
-  const r=await fetch('/buy',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({want:want.value,cap:cap.value||'1',pass:passInput.value})});
+  const r=await fetch('/buy',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({want:want.value,cap:cap.value||'1',pass:passInput.value.trim(),email:emailInput.value.trim()})});
   d=await r.json();
 }catch(e){
   out.classList.add('err');
@@ -98,6 +120,6 @@ if(d.error && /password/i.test(d.error)){
   eye.classList.add('err');
   out.classList.add('err');
 }
-out.innerHTML=d.error?'<b>'+d.error+'</b>':d.play_url?'<b>Yay! Found it. Bought it. And it\'s yours.</b><br><br><a href="'+d.play_url+'">Delivery of '+want.value+'</a>':'<b>Nothing found &mdash; And hey I wasn\'t going to spend your money badly. That\'s a win too.</b>';
+out.innerHTML=d.error?'<b>'+d.error+'</b>':d.play_url?'<b>Yay! Found it. Bought it. And it\'s yours.</b><br><br><a href="'+d.play_url+'">Delivery of '+want.value+'</a>'+(d.emailed_to?'<br><br>Sent to '+d.emailed_to:'')+(d.support?'<br><br>Feel free to contact me, even if its to tell me how well you slept!<br><a href="'+d.support+'">WhatsApp me</a><br><br><b>Sweet deep sleep &mdash; where your body has it to itself.<br>The repair workshop opens.<br>Look forward to waking up.</b>':''):'<b>Nothing found &mdash; And hey I wasn\'t going to spend your money badly. That\'s a win too.</b>';
 };
 </script>

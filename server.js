@@ -31,6 +31,12 @@ app.post('/buy', async (q, r) => {
     const capUsd = Math.min(parseFloat(q.body.cap || '1') || 0, MAX_SPEND);
     if (!(capUsd > 0)) return r.json({ error: 'set a spend cap' });
 
+    // Optional - the buyer can ask for the licence by email.
+    const email = (q.body.email || '').toString().trim().slice(0, 254);
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return r.json({ error: 'that email address does not look right' });
+    }
+
     const probe = await fetch(SELLER, { method: 'GET' });
     if (probe.status !== 402) return r.json({ error: 'seller did not quote a price' });
     const quote = (await probe.json()).accepts[0];
@@ -41,8 +47,14 @@ app.post('/buy', async (q, r) => {
 
     const { wrapFetchWithPayment } = await import('x402-fetch');
     const acct = privateKeyToAccount(process.env.BUYER_KEY);
-    const res = await wrapFetchWithPayment(fetch, acct, BigInt(Math.round(capUsd * 1e6)))(SELLER, { method: 'GET' });
-    r.json(await res.json());
+    // Belt and braces: the header can be dropped on the 402 retry, the query
+    // string cannot.
+    const target = email ? SELLER + '?email=' + encodeURIComponent(email) : SELLER;
+    const headers = email ? { 'X-Buyer-Email': email } : {};
+    const res = await wrapFetchWithPayment(fetch, acct, BigInt(Math.round(capUsd * 1e6)))(target, { method: 'GET', headers: headers });
+    const body = await res.json();
+    if (email) body.emailed_to = email;
+    r.json(body);
   } catch (e) {
     console.error('buy failed', e.message);
     r.status(200).json({ error: e.message });
